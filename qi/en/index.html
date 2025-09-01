@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Map of the average IQ in Brazil by region (interactive)</title>
+  <meta name="description" content="Map of Brazil showing an estimate for the average IQ of each region.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/assets/leaflet.css" />
+  <script src="/assets/leaflet.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+
+    .leaflet-container {
+      background-color: white;
+    }
+
+    .info-box {
+      position: absolute;
+      top: 90px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      font-family: Arial, sans-serif;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      font-family: Arial, sans-serif;
+      z-index: 1000;
+    }
+
+    @media screen and (max-width: 768px) {
+      .info-box {
+        top: 10px;
+        left: unset;
+        right: 10px;
+        min-width: 0;
+        max-width: 120px;
+        font-size: 12px;
+      }
+
+      .legend {
+        left: auto;
+        right: 10px;
+        bottom: 10px;
+        font-size: 12px;
+      }
+
+      .legend div div {
+        width: 12px !important;
+        height: 12px !important;
+      }
+
+      .legend div {
+        margin-bottom: 3px !important;
+      }
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 0;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .close-modal {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close-modal:hover {
+      color: black;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div class="info-box">
+    <button id="about-btn">About</button>
+    <span class="language-switcher" style="font-size: 12px; color: #7A7A7A; margin-top: 5px;">
+      <a href="/qi" style="color: inherit;">Portuguese version</a>
+    </span>
+  </div>
+
+  <div class="legend">
+    <div style="margin-bottom: 0px; font-weight: bold;">Average IQ</div><br />
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(49, 54, 149); margin-right: 5px;"></div>
+      <span>96 or more</span>
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(171, 203, 198); margin-right: 5px;"></div>
+      <span>94</span>
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(254, 254, 190); margin-right: 5px;"></div>
+      <span>92</span>
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(230, 80, 53); margin-right: 5px;"></div>
+      <span>90</span>
+    </div>
+    <div style="display: flex; align-items: center;">
+      <div style="width: 20px; height: 20px; background-color: rgb(165, 0, 38); margin-right: 5px;"></div>
+      <span>88 or less</span>
+    </div>
+  </div>
+
+  <div id="about-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2 style="margin-top: 0">Sobre</h2>
+      <p>This map shows an estimate of the average IQ for each census tract (Setor Censitário) in the IBGE 2022 Census.</p>
+      <p>To calculate the average IQ for each sector, a weighted average was used. This method considers the number of people of each race in the sector and the average IQ values associated with each race:</p>
+      <ul>
+        <li><strong>Asians</strong>: 103</li>
+        <li><strong>Whites</strong>: 96</li>
+        <li><strong>Mixed-race (pardos)</strong>: 90</li>
+        <li><strong>Blacks</strong>: 85</li>
+        <li><strong>Indigenous</strong>: 84</li>
+      </ul>
+      <p>Sources for the average values:</p>
+      <ul>
+        <li>Lynn, Richard, and Tatu Vanhanen. <i>IQ and the wealth of nations</i>. Bloomsbury Publishing USA, 2002.</li>
+        <li>Herrnstein, Richard J., and Charles Murray. <i>The bell curve: Intelligence and class structure in American life</i>. Simon and Schuster, 2010.</li>
+      </ul>
+      <h2 style="margin-top: 0">See also</h2>
+      <p><a href="/en">Racial map of white people in Brazil (interactive)</a></p>
+    </div>
+  </div>
+
+  <script>
+    const map = L.map('map').setView([-14.2350, -51.9253], 4);
+
+    L.tileLayer('../tiles/{z}/{x}/{y}.webp', {
+      minZoom: 3,
+      maxZoom: 20,
+      maxNativeZoom: 12,
+      minNativeZoom: 5,
+      tileSize: 256,
+      opacity: 0.75,
+      className: 'custom-tile-layer'
+    }).addTo(map);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20,
+      minZoom: 3,
+      attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, ' +
+        'under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. ' +
+        'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under ODbL.'
+    }).addTo(map);
+  </script>
+
+  <script>
+    const modal = document.getElementById("about-modal");
+    const aboutBtn = document.getElementById("about-btn");
+    const closeBtn = document.querySelector(".close-modal");
+
+    aboutBtn.addEventListener("click", function () {
+      modal.style.display = "block";
+    });
+
+    closeBtn.addEventListener("click", function () {
+      modal.style.display = "none";
+    });
+
+    window.addEventListener("click", function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && modal.style.display === "block") {
+        modal.style.display = "none";
+      }
+    });
+  </script>
+
+</body>
+
+</html>

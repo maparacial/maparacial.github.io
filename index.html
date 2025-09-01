@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <title>Mapa racial das pessoas brancas no Brasil (interativo)</title>
+  <meta name="description" content="Mapa racial do Brasil mostrando a distribuição das pessoas brancas no país. Baseado em dados do Censo IBGE 2022.">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/assets/leaflet.css" />
+  <script src="/assets/leaflet.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+
+    .leaflet-container {
+      background-color: white;
+    }
+
+    .info-box {
+      position: absolute;
+      top: 90px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      font-family: Arial, sans-serif;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 30px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      font-family: Arial, sans-serif;
+      z-index: 1000;
+    }
+
+    @media screen and (max-width: 768px) {
+      .info-box {
+        top: 10px;
+        left: unset;
+        right: 10px;
+        min-width: 0;
+        max-width: 120px;
+        font-size: 12px;
+      }
+
+      .legend {
+        left: auto;
+        right: 10px;
+        bottom: 10px;
+        font-size: 12px;
+      }
+
+      .legend div div {
+        width: 12px !important;
+        height: 12px !important;
+      }
+
+      .legend div {
+        margin-bottom: 3px !important;
+      }
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 0;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .close-modal {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close-modal:hover {
+      color: black;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map"></div>
+  <div class="info-box">
+    <button id="about-btn">Sobre</button>
+    <span class="language-switcher" style="font-size: 12px; color: #7A7A7A; margin-top: 5px;">
+      <a href="/en" style="color: inherit;">English version</a>
+    </span>
+  </div>
+
+  <div class="legend">
+    <div style="margin-bottom: 0px; font-weight: bold;">Pessoas brancas</div><br />
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(49, 54, 149); margin-right: 5px;"></div>
+      <span>100%</span>
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(145, 187, 200); margin-right: 5px;"></div>
+      <span>80%</span>
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(254, 254, 190); margin-right: 5px;"></div>
+      <span>50%</span>
+    </div>
+    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+      <div style="width: 20px; height: 20px; background-color: rgb(244, 109, 67); margin-right: 5px;"></div>
+      <span>20%</span>
+    </div>
+    <div style="display: flex; align-items: center;">
+      <div style="width: 20px; height: 20px; background-color: rgb(165, 0, 38); margin-right: 5px;"></div>
+      <span>0%</span>
+    </div>
+  </div>
+
+  <div id="about-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2 style="margin-top: 0">Sobre</h2>
+      <p>Este mapa mostra a proporção de pessoas brancas em cada Setor Censitário do Censo IBGE 2022.</p>
+      <p>Locais vermelhos são de maioria não-branca (negra, parda ou indígena), enquanto locais azuis são de maioria branca.</p>
+      <h2 style="margin-top: 0">Veja também</h2>
+      <p><a href="/qi">Mapa do QI médio do Brasil por região (interativo)</a></p>
+    </div>
+  </div>
+
+  <script>
+    const map = L.map('map').setView([-14.2350, -51.9253], 4);
+
+    L.tileLayer('tiles/{z}/{x}/{y}.webp', {
+      minZoom: 3,
+      maxZoom: 20,
+      maxNativeZoom: 12,
+      minNativeZoom: 5,
+      tileSize: 256,
+      opacity: 0.75,
+      className: 'custom-tile-layer'
+    }).addTo(map);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', {
+      maxZoom: 20,
+      minZoom: 3,
+      attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, ' +
+        'under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. ' +
+        'Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under ODbL.'
+    }).addTo(map);
+  </script>
+
+  <script>
+    const modal = document.getElementById("about-modal");
+    const aboutBtn = document.getElementById("about-btn");
+    const closeBtn = document.querySelector(".close-modal");
+
+    aboutBtn.addEventListener("click", function () {
+      modal.style.display = "block";
+    });
+
+    closeBtn.addEventListener("click", function () {
+      modal.style.display = "none";
+    });
+
+    window.addEventListener("click", function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && modal.style.display === "block") {
+        modal.style.display = "none";
+      }
+    });
+  </script>
+
+</body>
+
+</html>
